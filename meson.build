@@ -1,4 +1,4 @@
-project('harfbuzz', 'c', 'cpp',
+project('harfbuzz', ['c', 'cpp'],
   meson_version: '>= 0.55.0',
   version: '10.4.0',
   default_options: [
@@ -102,44 +102,36 @@ check_funcs = [
 
 m_dep = cpp.find_library('m', required: false)
 
-if meson.version().version_compare('>=0.60.0')
+# Painful hack to handle multiple dependencies but also respect options
+if get_option('freetype').disabled()
+  freetype_dep = dependency('', required: false)
+else
   # Sadly, FreeType's versioning schemes are different between pkg-config and CMake
-  # pkg-config: freetype2, cmake: Freetype
+
+  # Try pkg-config name
   freetype_dep = dependency('freetype2',
                             version: freetype_min_version,
                             method: 'pkg-config',
                             required: false,
                             allow_fallback: false)
   if not freetype_dep.found()
-    freetype_dep = dependency('FreeType',
+    # Try cmake name
+    freetype_dep = dependency('Freetype',
                               version: freetype_min_version_actual,
                               method: 'cmake',
-                              required: get_option('freetype'),
-                              default_options: ['harfbuzz=disabled'],
-                              allow_fallback: true)
-  endif
-else
-  # painful hack to handle multiple dependencies but also respect options
-  freetype_opt = get_option('freetype')
-  # we want to handle enabled manually after fallbacks, but also handle disabled normally
-  if freetype_opt.enabled()
-    freetype_opt = false
-  endif
-  # try pkg-config name
-  freetype_dep = dependency('freetype2', version: freetype_min_version, method: 'pkg-config', required: freetype_opt)
-  # when disabled, leave it not-found
-  if not freetype_dep.found() and not get_option('freetype').disabled()
-    # Try cmake name
-    freetype_dep = dependency('Freetype', version: freetype_min_version_actual, method: 'cmake', required: false)
-    # Subproject fallback, `allow_fallback: true` means the fallback will be
-    # tried even if the freetype option is set to `auto`.
+                              required: false,
+                              allow_fallback: false)
+    # Subproject fallback
     if not freetype_dep.found()
-      freetype_dep = dependency('freetype2',
-                                version: freetype_min_version,
-                                method: 'pkg-config',
+      freetype_proj = subproject('freetype2',
+                                version: freetype_min_version_actual,
                                 required: get_option('freetype'),
-                                default_options: ['harfbuzz=disabled'],
-                                allow_fallback: true)
+                                default_options: ['harfbuzz=disabled'])
+      if freetype_proj.found()
+        freetype_dep = freetype_proj.get_variable('freetype_dep')
+      else
+        freetype_dep = dependency('', required: false)
+      endif
     endif
   endif
 endif
@@ -227,16 +219,18 @@ endif
 
 chafa_dep = dependency('chafa', version: chafa_min_version, required: get_option('chafa'))
 
+fontations_dep_found = false
+if get_option('fontations').enabled()
+  add_languages(['rust'], native: false, required : true)
+  fontations_dep_found = true
+endif
+
 conf = configuration_data()
 incconfig = include_directories('.')
 
 add_project_arguments('-DHAVE_CONFIG_H', language: ['c', 'cpp'])
 
-warn_cflags = [
-  '-Wno-non-virtual-dtor',
-]
-
-cpp_args = cpp.get_supported_arguments(warn_cflags)
+cpp_args = []
 
 if glib_dep.found()
   conf.set('HAVE_GLIB', 1)
@@ -270,6 +264,10 @@ endif
 
 if chafa_dep.found()
   conf.set('HAVE_CHAFA', 1)
+endif
+
+if fontations_dep_found
+  conf.set('HAVE_FONTATIONS', 1)
 endif
 
 if wasm_dep.found()

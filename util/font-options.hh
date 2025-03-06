@@ -33,6 +33,9 @@
 #ifdef HAVE_FREETYPE
 #include <hb-ft.h>
 #endif
+#ifdef HAVE_FONTATIONS
+#include <hb-fontations.h>
+#endif
 #ifdef HAVE_CORETEXT
 #include <hb-coretext.h>
 #endif
@@ -82,13 +85,16 @@ struct font_options_t : face_options_t
 
 
 static struct supported_font_funcs_t {
-	char name[9];
+	char name[11];
 	void (*func) (hb_font_t *);
 } supported_font_funcs[] =
 {
   {"ot",	hb_ot_font_set_funcs},
 #ifdef HAVE_FREETYPE
   {"ft",	hb_ft_font_set_funcs},
+#endif
+#ifdef HAVE_FONTATIONS
+  {"fontations",hb_fontations_font_set_funcs},
 #endif
 #ifdef HAVE_CORETEXT
   {"coretext",	hb_coretext_font_set_funcs},
@@ -146,7 +152,6 @@ font_options_t::post_parse (GError **error)
 	  g_string_append_c (s, '/');
 	g_string_append (s, supported_font_funcs[i].name);
       }
-      g_string_append_c (s, '\n');
       char *p = g_string_free (s, FALSE);
       g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
 		   "Unknown font function implementation `%s'; supported values are: %s; default is %s",
@@ -307,7 +312,7 @@ font_options_t::add_options (option_parser_t *parser)
     static_assert ((ARRAY_LENGTH_CONST (supported_font_funcs) > 0),
 		   "No supported font-funcs found.");
     GString *s = g_string_new (nullptr);
-    g_string_printf (s, "Set font functions implementation to use (default: %s)\n\n    Supported font function implementations are: %s",
+    g_string_printf (s, "Set font functions implementation to use (default: %s)\n    Supported font function implementations are: %s",
 		     supported_font_funcs[0].name,
 		     supported_font_funcs[0].name);
     for (unsigned int i = 1; i < ARRAY_LENGTH (supported_font_funcs); i++)
