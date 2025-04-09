@@ -134,7 +134,7 @@ typedef GTestFixtureFunc hb_test_fixture_func_t;
 #else
 typedef void (*hb_test_func_t)         (void);
 typedef void (*hb_test_data_func_t)    (gconstpointer user_data);
-typedef void (*hb_test_fixture_func_t) (void);
+typedef void (*hb_test_fixture_func_t) (gpointer fixture, gconstpointer user_data);
 #endif
 
 #if !GLIB_CHECK_VERSION(2,30,0)
@@ -166,7 +166,6 @@ static inline void hb_test_assert_blobs_equal (hb_blob_t *expected_blob, hb_blob
       int expected = *(raw_expected + i);
       int actual = *(raw_actual + i);
       if (expected != actual) fprintf(stderr, "+%u %02x != %02x\n", i, expected, actual);
-      else fprintf(stderr, "+%u %02x\n", i, expected);
     }
   }
   g_assert_cmpint(0, ==, memcmp(raw_expected, raw_actual, expected_length));
@@ -227,16 +226,7 @@ hb_test_add_vtable (const char             *test_path,
 }
 #define hb_test_add_fixture(FixturePrefix, UserData, Func) \
 G_STMT_START { \
-  typedef G_PASTE (FixturePrefix, _t) Fixture; \
-  void (*add_vtable) (const char*, gsize, gconstpointer, \
-		      void (*) (Fixture*, gconstpointer), \
-		      void (*) (Fixture*, gconstpointer), \
-		      void (*) (Fixture*, gconstpointer)) \
-	= (void (*) (const gchar *, gsize, gconstpointer, \
-		     void (*) (Fixture*, gconstpointer), \
-		     void (*) (Fixture*, gconstpointer), \
-		     void (*) (Fixture*, gconstpointer))) hb_test_add_vtable; \
-  add_vtable (#Func, sizeof (G_PASTE (FixturePrefix, _t)), UserData, \
+  hb_test_add_vtable (#Func, sizeof (G_PASTE (FixturePrefix, _t)), UserData, \
 	      G_PASTE (FixturePrefix, _init), Func, G_PASTE (FixturePrefix, _finish)); \
 } G_STMT_END
 
@@ -255,16 +245,7 @@ hb_test_add_vtable_flavor (const char             *test_path,
 }
 #define hb_test_add_fixture_flavor(FixturePrefix, UserData, Flavor, Func) \
 G_STMT_START { \
-  typedef G_PASTE (FixturePrefix, _t) Fixture; \
-  void (*add_vtable) (const char*, const char *, gsize, gconstpointer, \
-		      void (*) (Fixture*, gconstpointer), \
-		      void (*) (Fixture*, gconstpointer), \
-		      void (*) (Fixture*, gconstpointer)) \
-	= (void (*) (const gchar *, const char *, gsize, gconstpointer, \
-		     void (*) (Fixture*, gconstpointer), \
-		     void (*) (Fixture*, gconstpointer), \
-		     void (*) (Fixture*, gconstpointer))) hb_test_add_vtable_flavor; \
-  add_vtable (#Func, Flavor, sizeof (G_PASTE (FixturePrefix, _t)), UserData, \
+  hb_test_add_vtable_flavor (#Func, Flavor, sizeof (G_PASTE (FixturePrefix, _t)), UserData, \
 	      G_PASTE (FixturePrefix, _init), Func, G_PASTE (FixturePrefix, _finish)); \
 } G_STMT_END
 

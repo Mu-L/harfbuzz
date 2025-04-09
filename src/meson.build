@@ -318,6 +318,7 @@ hb_base_headers = files(
   'hb-ot-shape.h',
   'hb-ot-var.h',
   'hb-ot.h',
+  'hb-script-list.h',
   'hb-set.h',
   'hb-shape-plan.h',
   'hb-shape.h',
@@ -392,6 +393,8 @@ hb_subset_sources = files(
   'hb-subset-instancer-solver.hh',
   'hb-subset-instancer-solver.cc',
   'hb-subset-plan.cc',
+  'hb-subset-plan-layout.cc',
+  'hb-subset-plan-var.cc',
   'hb-subset-plan.hh',
   'hb-subset-plan-member-list.hh',
   'hb-subset-serialize.cc',
@@ -1039,7 +1042,7 @@ if get_option('tests').enabled()
 
   env = environment()
   env.set('srcdir', meson.current_source_dir())
-  env.set('base_srcdir', meson.source_root())
+  env.set('base_srcdir', meson.project_source_root())
   env.set('builddir', meson.current_build_dir())
   env.set('libs', meson.current_build_dir()) # TODO: Merge this with builddir after autotools removal
   HBSOURCES = []
