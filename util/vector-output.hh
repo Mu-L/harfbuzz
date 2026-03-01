@@ -240,9 +240,6 @@ struct vector_output_t : output_options_t<>, view_options_t
           continue;
         }
 
-        if (g.gid == 1 && g.ax == 0.f && g.ay == 0.f)
-          continue;
-
         if (hb_vector_draw_glyph (draw, upem_font, g.gid, pen_x, pen_y,
                                   extents_mode))
           had_draw = true;
